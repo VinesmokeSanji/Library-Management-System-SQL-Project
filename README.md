@@ -408,6 +408,25 @@ GROUP BY 1, 2
 **Task 18: Identify Members Issuing High-Risk Books**  
 Write a query to identify members who have issued books more than twice with the status "damaged" in the books table. Display the member name, book title, and the number of times they've issued damaged books.    
 
+```sql
+SELECT
+    m.member_name,
+    b.book_title,
+    COUNT(*) AS times_issued_damaged
+FROM
+    issued_status ist
+JOIN
+    members m ON ist.issued_member_id = m.member_id
+JOIN
+    books b ON ist.issued_book_isbn = b.isbn
+WHERE
+    b.status = 'damaged'
+GROUP BY
+    m.member_name, b.book_title
+HAVING
+    COUNT(*) > 2;
+```
+
 
 **Task 19: Stored Procedure**
 Objective:
@@ -485,7 +504,26 @@ Description: Write a CTAS query to create a new table that lists each member and
     Member ID
     Number of overdue books
     Total fines
+``` sql
 
+CREATE TABLE member_overdue_fines AS
+SELECT
+    m.member_id,
+    COUNT(ist.issued_id) AS num_overdue_books,
+    COUNT(ist.issued_id) * 0.50 * (CURRENT_DATE - ist.issued_date) AS total_fine,
+    (SELECT COUNT(*) FROM issued_status ist2 WHERE ist2.issued_member_id = m.member_id) AS total_books_issued
+FROM
+    members m
+JOIN
+    issued_status ist ON m.member_id = ist.issued_member_id
+LEFT JOIN
+    return_status rs ON ist.issued_id = rs.issued_id
+WHERE
+    rs.return_id IS NULL
+    AND (CURRENT_DATE - ist.issued_date) > 30
+GROUP BY
+    m.member_id;
+```
 
 
 ## Reports
